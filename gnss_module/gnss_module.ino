@@ -1,23 +1,39 @@
-/*
- * This example shows how to read from a seesaw encoder module.
- * The available encoder API is:
- *      int32_t getEncoderPosition();
-        int32_t getEncoderDelta();
-        void enableEncoderInterrupt();
-        void disableEncoderInterrupt();
-        void setEncoderPosition(int32_t pos);
- */
+///BME280 LIBRARIES///
+#include <Wire.h>
+#include <Adafruit_BME280.h>
+
+///ENCODER LIBRARIES///
 #include "Adafruit_seesaw.h"
 #include <seesaw_neopixel.h>
 
-#define SS_SWITCH        24
-#define SS_NEOPIX        6
+///INITIALIZE BME280///
+Adafruit_BME280 bme; // use I2C interface for BME280 sensor 
+// see library examples -> test/unified for different communication examples
 
-#define SEESAW_ADDR          0x36
+///INITIALIZE ENCODER///
+#define SS_SWITCH 24
+#define SS_NEOPIX 6
+
+#define SEESAW_ADDR 0x36
 
 Adafruit_seesaw ss;
 
+///GLOBAL BME280 VARIABLES///
+
+
+///GLOBAL ENCODER VARIABLES///
+
+  int encoderPosition1 = 0;
+  int buttonState1 = 0;
+
 int32_t encoder_position;
+int32_t lastEncoderPosition;
+bool isButtonPushed = LOW; 
+int buttonState; 
+int32_t lastButtonState = LOW;
+unsigned long lastDebounceTime = 0; //last time button was toggled
+unsigned long debounceDelay = 50; //debounce time (increase if debounce ocurs)
+unsigned long previousMillis = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -51,17 +67,52 @@ void setup() {
   ss.enableEncoderInterrupt();
 }
 
-void loop() {
-  if (! ss.digitalRead(SS_SWITCH)) {
-    Serial.println("Button pressed!");
+/**
+ * @brief Reads the encoder position and sets the neopixel color accordingly. 
+ * @return Returns the position if changed from last position.
+ */
+int readEncoderMovement() {
+  int32_t new_position = ss.getEncoderPosition();
+  if (encoder_position != new_position) {
+    Serial.println(new_position);  // display new position
+    encoder_position = new_position;
+  }
+  return encoder_position;
+}
+
+
+/**
+ * @brief Reads the button state and prints a statement if the button is pressed.
+ * @return Returns the button reading if changed from last button reading.
+ */
+int readEncoderButtonPressed() {
+  int32_t reading = ss.digitalRead(SS_SWITCH); // Read button state
+
+  if (reading != lastButtonState) { // If the button state changed from the last reading
+    lastDebounceTime = millis(); // reset debounce timer
   }
 
-  int32_t new_position = ss.getEncoderPosition();
-  // did we move arounde?
-  if (encoder_position != new_position) {
-    Serial.println(new_position);         // display new position
-    encoder_position = new_position;      // and save for next round
+  if ((millis() - lastDebounceTime) > debounceDelay) { // If the button state has been stable for longer than debounceDelay
+    if (reading != buttonState) { // If the button state has changed
+      buttonState = reading;
+
+      if (buttonState == LOW) { // If the new state is LOW (pressed)
+        //isButtonPushed = !isButtonPushed;
+        //Serial.println(isButtonPushed);
+        Serial.println("Button pressed, state toggled!");
+      }
+    }
   }
+
+  lastButtonState = reading; // Save reading for next loop
+  return lastButtonState;
+}
+void loop() {
+  
+  
+
+  encoderPosition1 = readEncoderMovement();
+  buttonState1 = readEncoderButtonPressed();
 
   // don't overwhelm serial port
   delay(10);
