@@ -15,6 +15,10 @@
 #include <Adafruit_ICM20X.h>
 #include <Adafruit_ICM20948.h>
 
+///DISPLAY LIBRARIES///
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
 ///INITIALIZE BME280///
 Adafruit_BME280 bme; // use I2C interface for BME280 sensor 
 // see library examples -> test/unified for different communication examples
@@ -28,6 +32,14 @@ Adafruit_BME280 bme; // use I2C interface for BME280 sensor
 
 Adafruit_seesaw ss;
 
+int32_t encoder_position;
+int32_t lastEncoderPosition;
+bool isButtonPushed = LOW; 
+int buttonState; 
+int32_t lastButtonState = LOW;
+unsigned long lastDebounceTime = 0; //last time button was toggled
+unsigned long debounceDelay = 50; //debounce time (increase if debounce ocurs)
+unsigned long previousMillis = 0;
 
 ///INITIALIZE BNO055///
 
@@ -85,19 +97,41 @@ struct measurementValues {
     float pressure;
     float temperature;
 };
-///GLOBAL BME280 VARIABLES///
 
+///INITIALIZE DISPLAY///
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
-///GLOBAL ENCODER VARIABLES///
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+// The pins for I2C are defined by the Wire-library. 
+// On an arduino UNO:       A4(SDA), A5(SCL)
+// On an arduino MEGA 2560: 20(SDA), 21(SCL)
+// On an arduino LEONARDO:   2(SDA),  3(SCL), ...
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-int32_t encoder_position;
-int32_t lastEncoderPosition;
-bool isButtonPushed = LOW; 
-int buttonState; 
-int32_t lastButtonState = LOW;
-unsigned long lastDebounceTime = 0; //last time button was toggled
-unsigned long debounceDelay = 50; //debounce time (increase if debounce ocurs)
-unsigned long previousMillis = 0;
+#define NUMFLAKES     10 // Number of snowflakes in the animation example
+
+#define LOGO_HEIGHT   16
+#define LOGO_WIDTH    16
+static const unsigned char PROGMEM logo_bmp[] =
+{ 0b00000000, 0b11000000,
+  0b00000001, 0b11000000,
+  0b00000001, 0b11000000,
+  0b00000011, 0b11100000,
+  0b11110011, 0b11100000,
+  0b11111110, 0b11111000,
+  0b01111110, 0b11111111,
+  0b00110011, 0b10011111,
+  0b00011111, 0b11111100,
+  0b00001101, 0b01110000,
+  0b00011011, 0b10100000,
+  0b00111111, 0b11100000,
+  0b00111111, 0b11110000,
+  0b01111100, 0b11110000,
+  0b01110000, 0b01110000,
+  0b00000000, 0b00110000 };
 
 void setup() {
   Serial.begin(115200);
@@ -141,6 +175,13 @@ void setup() {
   init_ICP10125();
   reset();
   delay(10);
+
+    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;  // Don't proceed, loop forever
+  }
 }
 
 void init_ICP10125() {
@@ -556,6 +597,18 @@ int readEncoderButtonPressed() {
   lastButtonState = reading; // Save reading for next loop
   return lastButtonState;
 }
+
+void printWordOnDisplay(char* word ) {
+  display.clearDisplay();
+
+  display.setTextSize(2);  // Draw 2X-scale text
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(10, 0);
+  display.println(F(word));
+  display.display();  // Show initial text
+  delay(10);
+}
+
 void loop() {
 
   encoder_position = readEncoderMovement();
@@ -567,15 +620,19 @@ void loop() {
   switch (encoder_position) {
       case 1:
         printBME280Values();
+        printWordOnDisplay("Hallo :)");
         break;
       case 2:
         printBNO055Values();
+        printWordOnDisplay("Hei :)");
         break;
       case 3:
         printICM20948Values();
+        printWordOnDisplay("Haya :)");
         break;
       case 4: 
         printICP10125Values();
+        printWordOnDisplay("Hurra :)");
         break;
       default:
         Serial.println("Case default");
