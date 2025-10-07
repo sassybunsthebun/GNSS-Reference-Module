@@ -9,6 +9,7 @@
 ///INITIALIZE BME280///
 Adafruit_BME280 bme; // use I2C interface for BME280 sensor 
 // see library examples -> test/unified for different communication examples
+#define SEALEVELPRESSURE_HPA (1013.25)
 
 ///INITIALIZE ENCODER///
 #define SS_SWITCH 24
@@ -23,9 +24,6 @@ Adafruit_seesaw ss;
 
 ///GLOBAL ENCODER VARIABLES///
 
-  int encoderPosition1 = 0;
-  int buttonState1 = 0;
-
 int32_t encoder_position;
 int32_t lastEncoderPosition;
 bool isButtonPushed = LOW; 
@@ -39,6 +37,20 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
 
+  initializeEncoder();
+
+  if (! (bme.begin() )) {
+        Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
+        Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
+        Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
+        Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
+        Serial.print("        ID of 0x60 represents a BME 280.\n");
+        Serial.print("        ID of 0x61 represents a BME 680.\n");
+        while (1) delay(10);
+    }
+}
+
+void initializeEncoder() {
   Serial.println("Looking for seesaw!");
   
   if (! ss.begin(SEESAW_ADDR)) {
@@ -67,6 +79,27 @@ void setup() {
   ss.enableEncoderInterrupt();
 }
 
+
+void printBME280Values() {
+    Serial.print("Temperature = ");
+    Serial.print(bme.readTemperature());
+    Serial.println(" °C");
+
+    Serial.print("Pressure = ");
+
+    Serial.print(bme.readPressure() / 100.0F);
+    Serial.println(" hPa");
+
+    Serial.print("Approx. Altitude = ");
+    Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
+    Serial.println(" m");
+
+    Serial.print("Humidity = ");
+    Serial.print(bme.readHumidity());
+    Serial.println(" %");
+
+    Serial.println();
+}
 /**
  * @brief Reads the encoder position and sets the neopixel color accordingly. 
  * @return Returns the position if changed from last position.
@@ -108,18 +141,16 @@ int readEncoderButtonPressed() {
   return lastButtonState;
 }
 void loop() {
-  
-  
 
-  encoderPosition1 = readEncoderMovement();
-  buttonState1 = readEncoderButtonPressed();
+  encoder_position = readEncoderMovement();
+  buttonState = readEncoderButtonPressed();
 
   // don't overwhelm serial port
   delay(10);
 
   switch (encoder_position) {
       case 1:
-        Serial.println("Case 1");
+        printBME280Values();
         break;
       case 2:
         Serial.println("Case 2");
