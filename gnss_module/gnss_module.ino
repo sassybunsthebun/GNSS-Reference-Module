@@ -562,7 +562,7 @@ measurementValues values = measure();
  * @return Returns the position if changed from last position.
  */
 int readEncoderMovement() {
-  int32_t new_position = ss.getEncoderPosition();
+  int32_t new_position = ss.getEncoderPosition() % 20;
   if (encoder_position != new_position) {
     Serial.println(new_position);  // display new position
     encoder_position = new_position;
