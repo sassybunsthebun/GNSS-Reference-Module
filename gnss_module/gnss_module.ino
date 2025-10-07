@@ -6,6 +6,11 @@
 #include "Adafruit_seesaw.h"
 #include <seesaw_neopixel.h>
 
+///BNO055 LIBRARIES///
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+
 ///INITIALIZE BME280///
 Adafruit_BME280 bme; // use I2C interface for BME280 sensor 
 // see library examples -> test/unified for different communication examples
@@ -18,6 +23,11 @@ Adafruit_BME280 bme; // use I2C interface for BME280 sensor
 #define SEESAW_ADDR 0x36
 
 Adafruit_seesaw ss;
+
+
+///INITIALIZE BNO055///
+
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
 ///GLOBAL BME280 VARIABLES///
 
@@ -48,6 +58,17 @@ void setup() {
         Serial.print("        ID of 0x61 represents a BME 680.\n");
         while (1) delay(10);
     }
+
+  if(!bno.begin())
+  {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while(1);
+  }
+  
+  delay(1000);
+    
+  bno.setExtCrystalUse(true);
 }
 
 void initializeEncoder() {
@@ -99,6 +120,22 @@ void printBME280Values() {
     Serial.println(" %");
 
     Serial.println();
+}
+
+void printBNO055Values()
+{
+  /* Get a new sensor event */ 
+  sensors_event_t event; 
+  bno.getEvent(&event);
+  
+  /* Display the floating point data */
+  Serial.print("X: ");
+  Serial.print(event.orientation.x, 4);
+  Serial.print("\tY: ");
+  Serial.print(event.orientation.y, 4);
+  Serial.print("\tZ: ");
+  Serial.print(event.orientation.z, 4);
+  Serial.println("");
 }
 /**
  * @brief Reads the encoder position and sets the neopixel color accordingly. 
@@ -153,7 +190,7 @@ void loop() {
         printBME280Values();
         break;
       case 2:
-        Serial.println("Case 2");
+        printBNO055Values();
         break;
       default:
         Serial.println("Case default");
