@@ -603,7 +603,7 @@ void printWordOnDisplay(char* word ) {
 
   display.setTextSize(2);  // Draw 2X-scale text
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(10, 0);
+  display.setCursor(5, 0);
   display.println(F(word));
   display.display();  // Show initial text
   delay(10);
@@ -615,27 +615,28 @@ void loop() {
   buttonState = readEncoderButtonPressed();
 
   // don't overwhelm serial port
-  delay(10);
+  delay(50);
 
   switch (encoder_position) {
       case 1:
         printBME280Values();
-        printWordOnDisplay("Hallo :)");
+        printWordOnDisplay("BME280");
         break;
       case 2:
         printBNO055Values();
-        printWordOnDisplay("Hei :)");
+        printWordOnDisplay("BNO055");
         break;
       case 3:
         printICM20948Values();
-        printWordOnDisplay("Haya :)");
+        printWordOnDisplay("ICM20948");
         break;
       case 4: 
         printICP10125Values();
-        printWordOnDisplay("Hurra :)");
+        printWordOnDisplay("ICP10125");
         break;
       default:
         Serial.println("Case default");
+        printWordOnDisplay("Velg modus");
         // default is optional
         break;
     }
